@@ -32,23 +32,25 @@ class Links:
 
 
 
-list_of_links_internal = Links([""])
-list_of_links_external = Links([""])
-checked_URLs =  Links(([""],[""]))
+list_of_links_internal = Links(([],[]))
+list_of_links_external = Links(([],[]))
+checked_URLs =  Links(([],[]))
+URL_parrent_list = Links(([],[]))
 dict_to_save = {}
+dict_to_URL_save = {}
 def main():
     website = requests.get(url)
     
     #dict_to_save.update({str(website) : url})
     
     
-    links_on_website(website.text)
+    links_on_website(website)
     flag = True
     i = 0
-    while len(list_of_links_internal.data) > 1 and flag:
+    while len(list_of_links_internal.data[0]) > 1 and flag:
         #print(i)
         i += 1
-        crawl_list(list_of_links_internal)
+        crawl_list(list_of_links_internal.data)
         if i >= 3:
             print("LIMIT REACHED")
             flag = False
@@ -63,19 +65,28 @@ def main():
     with open("sample.json", "w") as outfile:
         outfile.write(json_object)
         outfile.close()
+    for i in range(0,len(URL_parrent_list.data[1])):
+        dict_to_URL_save.update({URL_parrent_list.data[0][i]:URL_parrent_list.data[1][i]})
+    # Writing to sample.json
+    json_object = json.dumps(dict_to_URL_save,indent=4)
+    print(dict_to_URL_save)
+    with open("URLParents.json", "w") as outfile:
+        outfile.write(json_object)
+        outfile.close()
 
 
     
     
     
 def links_on_website(html):
-    soup = BeautifulSoup(html,'html.parser') 
+    parent = html.url
+    soup = BeautifulSoup(html.text,'html.parser') 
     for link in soup.find_all('a'):
         path = link.get('href')
         if path and path.startswith('/') and not list_of_links_internal.check_element_in_list(link) and not checked_URLs.check_element_in_list(link): # Check if Link is internal
-            list_of_links_internal.append(path)
+            list_of_links_internal.append(path,parent)
         elif not list_of_links_external.check_element_in_list(link) and not checked_URLs.check_element_in_list(link):
-            list_of_links_external.append(path)
+            list_of_links_external.append(path,parent)
         else:
             continue
     #print(list_of_links_internal.check_element_in_list(""))
@@ -83,14 +94,18 @@ def links_on_website(html):
     unique_list_checker(list_of_links_external)
     
 def crawl_list(list_to_crawl):
-    for link in tqdm(list_to_crawl.data):
-        website = requests.get(url+link)
+    for i in tqdm(range(0,list_to_crawl[0])):
+        website = requests.get(url+list_to_crawl[0][i])
         links_on_website(website.text)
         #dict_to_save.update({str(website) : url+link})
         #print(website)
         #print(link)
-        list_to_crawl.remove(link)
-        checked_URLs.append((link,str(website)))
+        checked_URLs.append((list_to_crawl[0][i],str(website)))
+        URL_parrent_list.append((list_to_crawl[0][i],list_to_crawl[1][i]))
+        list_to_crawl[0].remove(list_to_crawl[0][i])
+        list_to_crawl[1].remove(list_to_crawl[1][i])
+        
+        
     
     
         
