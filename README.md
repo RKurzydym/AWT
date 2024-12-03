@@ -9,6 +9,10 @@ pipenv run # to download all requirements
 pipenv shell # Enable the Evironment (after this it is visible in Code)
 ```
 
+``` Bash
+prisma generate
+prisma db push
+```
 
 
 ## Test and Deploy

@@ -1,3 +1,5 @@
 *.json
 *.lock
+*.db
+/config/*
 /src/__pycache__/*

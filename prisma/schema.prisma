@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../test.db"
+}
+generator client {
+  provider = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+model Root {
+  id Int @id @unique @default(autoincrement()) 
+  name  String? @unique
+  parents Parent[]
+  links Link[]
+}
+
+model Link {
+  id Int @id @unique @default(autoincrement()) 
+  rootid Int
+  name  String?
+  root Root @relation(fields: [rootid], references: [id])
+}
+
+model Parent{
+  id Int @id @unique @default(autoincrement()) 
+  rootid Int
+  name  String?
+  root Root @relation(fields: [rootid], references: [id])
+}
+
