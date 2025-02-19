@@ -12,22 +12,25 @@ generator client {
 
 model Root {
   id Int @id @unique @default(autoincrement()) 
-  name  String? @unique
-  parents Parent[]
+  name  String
+  tags Tag[]
   links Link[]
+  response String
 }
 
 model Link {
   id Int @id @unique @default(autoincrement()) 
   rootid Int
-  name  String?
+  name  String
   root Root @relation(fields: [rootid], references: [id])
 }
 
-model Parent{
-  id Int @id @unique @default(autoincrement()) 
+model Tag{
+  id Int @id @unique @default(autoincrement())
   rootid Int
-  name  String?
+  name String
   root Root @relation(fields: [rootid], references: [id])
 }
+
+
 

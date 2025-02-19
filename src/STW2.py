@@ -2,12 +2,19 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from tqdm import tqdm
+import os
+from dotenv import load_dotenv
+import asyncio
+from prisma import Prisma
+from prisma.models import Root,Link,Tag
+
+load_dotenv("./src/config.env")
 
 
-url = "https://www.finf.uni-hannover.de/"
 
-test = False
+url = os.getenv('TARGET_URL')
 
+# Notes of Sites (NoS)
 class NoS:
     def __init__(self,data):
         self.data = data
@@ -25,6 +32,12 @@ class NoS:
             listWebsites += x[2]
         count += len(list(set(listWebsites)))
         return count
+    def getResponseAt(self,pos):
+        return self.data[pos][3]
+    def getAllSubLinksAt(self,pos):
+        return self.data[pos][2]
+    def getAllSubTagAt(self,pos):
+        return self.data[pos][1]
     def __len__(self):
         return len(self.data)
         
@@ -34,32 +47,37 @@ NoS_list = NoS([[[""],[""],[""],[""]]])
 
 
 def main():
+    
     begin(url)
     
 
 
 def begin(url): #O(n*(n-m)) i think i calculatet it wrong but it a lot faster that the v1 version
     website = requests.get(url)
-    if test:
+    
+    
+    if 1 == os.getenv('TESTING'):
         startTests(website)
     else: 
         links = getAllLinks(website) #n
         NoS_list.newCurrent([[website.url],[""],links,[website.status_code]]) #1
         NoS_list.data.pop(0)#1
-        NoS_list.print()#1 relativ printin cost alot of time
-        print("_"*22)
+        if os.getenv('DEBUG'):
+            NoS_list.print()#1 relativ printin cost alot of time
+            print("_"*22)
         checkedLinks = []
         all_Unchecked = getAllNotCheckedLinks(checkedLinks)
         checkedLinks = beginIter(all_Unchecked)
-        print(all_Unchecked)
-        print("_"*22)
-        print(checkedLinks)
-        print("_"*22)
-        print(NoS_list.printList())
-        print("_"*22)
-        print(NoS_list.countFound())
-        print("_"*22)
-        print(len(NoS_list))
+        if os.getenv('DEBUG'):
+            print(all_Unchecked)
+            print("_"*22)
+            print(checkedLinks)
+            print("_"*22)
+            print(NoS_list.printList())
+            print("_"*22)
+            print(NoS_list.countFound())
+            print("_"*22)
+            print(len(NoS_list))
         checkedLinks = []
         all_Unchecked = getAllNotCheckedLinks(checkedLinks) #n-m
         checkedLinks += beginIter(all_Unchecked) #n*(n-m)
@@ -70,13 +88,16 @@ def begin(url): #O(n*(n-m)) i think i calculatet it wrong but it a lot faster th
             checkedLinks += beginIter(all_Unchecked) #n*(n-m)
             checkedLinks = list(set(checkedLinks)) #1
             i += 1
-            if(i >= 5):
+            if(i >= 2):
                 break
         NoS_list.print()
         print("___________________________________________________")
         print("Beginn End Calculation")
-        printWebsitesVisited()
-        print(NoS_list.countFound())
+        if os.getenv('DEBUG'):
+            printWebsitesVisited()
+            print(NoS_list.countFound())
+        asyncio.run(addToDB())
+        
     
     
 def getAllNotCheckedLinks(Checked):
@@ -86,6 +107,30 @@ def getAllNotCheckedLinks(Checked):
     
     links = list(set(links).difference(set(Checked)))
     return links
+async def addToDB():
+    if NoS_list is None:
+        return
+    
+    db = Prisma()
+    await db.connect()
+    for i in range(len(NoS_list)):
+        root = await db.root.create(
+            data={
+                "name": str(NoS_list.data[i][0]),
+                "response": str(NoS_list.getResponseAt(i)),
+                "tags": {
+                    "create": [
+                        {"name":str(tag)} for tag in NoS_list.getAllSubTagAt(i)
+                    ]
+                },
+                "links": {
+                    "create": [
+                        {"name":str(link)} for link in NoS_list.getAllSubLinksAt(i)
+                    ]
+                }
+            }
+        )
+        
 
 def beginIter(links):
     if(links == None or links ==[]):
@@ -127,10 +172,11 @@ def startTests(url):
     NoS_list.data.pop(0)#1
     NoS_list.print()#1 relativ printin cost alot of time
     
-    print(beginIter(getAllNotCheckedLinks([])))
+    #print(beginIter(getAllNotCheckedLinks([])))
     
     NoS_list.print()#1 relativ printin cost alot of time
     
+    asyncio.run(addToDB())
 
 
 if __name__ == '__main__':

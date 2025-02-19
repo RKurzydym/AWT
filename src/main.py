@@ -1,4 +1,5 @@
 #import STW
+import STW2
 import PTW
 
 
@@ -8,6 +9,7 @@ prozess = True
 def main():
     if crawl:
         print("a")
+        STW2.main()
         #STW.main()
     if prozess:
         PTW.main()

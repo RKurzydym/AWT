@@ -3,3 +3,4 @@
 *.db
 /config/*
 /src/__pycache__/*
+/src/*.env
