@@ -96,7 +96,8 @@ def begin(url): #O(n*(n-m)) i think i calculatet it wrong but it a lot faster th
         if os.getenv('DEBUG'):
             printWebsitesVisited()
             print(NoS_list.countFound())
-        asyncio.run(addToDB())
+        if os.getenv('DB_SAVING'):
+            asyncio.run(addToDB())
         
     
     
@@ -152,6 +153,8 @@ def getAllLinks(html):
     for link in soup.find_all('a'):
         path = link.get('href')
         if path and path.startswith('/'): # Check if Link is internal
+            if path == '/':
+                continue
             links.append(path)
         else:
             continue
